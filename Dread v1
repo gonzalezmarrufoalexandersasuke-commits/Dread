@@ -1,0 +1,186 @@
+-- ==========================================================
+-- SCRIPT DE LA ENTIDAD: DREAD (CON LOGRO ESTILO DOORS)
+-- ==========================================================
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local localPlayer = Players.LocalPlayer
+
+-- CONSTANTES Y RECURSOS
+local TEXTURA_ID = "rbxassetid://101689367668302"
+local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
+
+local AUDIO_ILUMINACION = "rbxassetid://4940109913"
+local AUDIO_ANIMACION = "rbxassetid://137192919028248"
+local AUDIO_LOGRO = "rbxassetid://10214220300" -- Sonido estilo logro de Doors
+
+local ANIMACION_ID = "http://www.roblox.com/asset/?id=507766388"
+local LOGRO_ENCOUNTER_ID = "rbxassetid://96662874287445"
+
+local personaje = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+local rootPart = personaje:WaitForChild("HumanoidRootPart")
+local humanoide = personaje:WaitForChild("Humanoid")
+
+-- Función para escanear si el jugador está a salvo en un armario
+local function escanearSeguridadArmario(char)
+	if not char then return false end
+	if char:GetAttribute("Hidden") == true or char:GetAttribute("IsHidden") == true or char:GetAttribute("Hiding") == true then return true end
+	
+	local jugador = Players:GetPlayerFromCharacter(char)
+	if jugador and (jugador:GetAttribute("Hidden") == true or jugador:GetAttribute("IsHidden") == true) then return true end
+	
+	local ancestro = char.Parent
+	while ancestro and ancestro ~= workspace do
+		local nL = ancestro.Name:lower()
+		if nL:find("closet") or nL:find("wardrobe") or nL:find("bed") or nL:find("hide") or nL:find("armario") then return true end
+		ancestro = ancestro.Parent
+	end
+	
+	if char:FindFirstChild("InCloset") or char:FindFirstChild("Escondido") or char:FindFirstChild("HidingIn") or char:FindFirstChild("Hiding") then return true end
+	return false
+end
+
+-- Función para mostrar el logro con animación (Estilo Doors)
+local function mostrarLogro()
+	local pGui = localPlayer:FindFirstChild("PlayerGui")
+	if not pGui then return end
+	
+	-- Sonido de logro
+	local sonido = Instance.new("Sound")
+	sonido.SoundId = AUDIO_LOGRO
+	sonido.Volume = 1.5
+	sonido.Parent = workspace
+	sonido:Play()
+	
+	-- Contenedor GUI
+	local screenGui = pGui:FindFirstChild("DreadBadgeGui") or Instance.new("ScreenGui")
+	screenGui.Name = "DreadBadgeGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = pGui
+	
+	-- Imagen del Logro
+	local logroImg = Instance.new("ImageLabel")
+	logroImg.Size = UDim2.new(0, 260, 0, 90)
+	logroImg.Position = UDim2.new(1, 10, 0.82, 0) -- Fuera de la pantalla (derecha)
+	logroImg.Image = LOGRO_ENCOUNTER_ID
+	logroImg.BackgroundTransparency = 1
+	logroImg.Parent = screenGui
+	
+	-- Animación de entrada (deslizar hacia la izquierda)
+	local tweenEntrada = TweenService:Create(
+		logroImg, 
+		TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), 
+		{Position = UDim2.new(1, -270, 0.82, 0)}
+	)
+	tweenEntrada:Play()
+	
+	-- Esperar 4 segundos y ocultar el logro (deslizar a la derecha)
+	task.delay(4, function()
+		local tweenSalida = TweenService:Create(
+			logroImg, 
+			TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.In), 
+			{Position = UDim2.new(1, 10, 0.82, 0)}
+		)
+		tweenSalida:Play()
+		tweenSalida.Completed:Connect(function()
+			logroImg:Destroy()
+			sonido:Destroy()
+		end)
+	end)
+end
+
+-- 1. SPAWN DE LA ENTIDAD EN FRENTE DEL JUGADOR
+local posicionSpawn = rootPart.CFrame * CFrame.new(0, 0, -10)
+
+local dread = Instance.new("Part")
+dread.Name = "Dread"
+dread.Size = TAMANO_ENTIDAD
+dread.Transparency = 1
+dread.Anchored = true
+dread.CanCollide = false
+dread.CFrame = CFrame.lookAt(posicionSpawn.Position, rootPart.Position)
+dread.Parent = workspace
+
+local decalFrente = Instance.new("Decal")
+decalFrente.Texture = TEXTURA_ID
+decalFrente.Face = Enum.NormalId.Front
+decalFrente.Parent = dread
+
+local decalAtras = Instance.new("Decal")
+decalAtras.Texture = TEXTURA_ID
+decalAtras.Face = Enum.NormalId.Back
+decalAtras.Parent = dread
+
+-- 2. ESPERA DE 5 SEGUNDOS (Comprobación inicial de armario)
+task.wait(5)
+
+if escanearSeguridadArmario(personaje) then
+	-- El jugador se escondió a tiempo: Dread desaparece
+	dread:Destroy()
+else
+	-- El jugador NO entró al armario: Comienza la secuencia
+	
+	-- Crear luz en el cuarto
+	local luzCuarto = Instance.new("ColorCorrectionEffect")
+	luzCuarto.Parent = game:GetService("Lighting")
+	luzCuarto.TintColor = Color3.fromRGB(255, 255, 255)
+	luzCuarto.Brightness = 0.8
+	
+	-- Esperar 2 segundos
+	task.wait(2)
+	
+	-- Crear y reproducir sonido en LOOP
+	local sonidoLoop = Instance.new("Sound")
+	sonidoLoop.SoundId = AUDIO_ILUMINACION
+	sonidoLoop.Volume = 2
+	sonidoLoop.Looped = true
+	sonidoLoop.Parent = workspace
+	sonidoLoop:Play()
+	
+	-- Esperar 3.5 segundos
+	task.wait(3.5)
+	
+	-- Cambiar luz a gris
+	luzCuarto.TintColor = Color3.fromRGB(128, 128, 128)
+	luzCuarto.Brightness = 0
+	
+	-- Suena el segundo audio
+	local sonidoAnim = Instance.new("Sound")
+	sonidoAnim.SoundId = AUDIO_ANIMACION
+	sonidoAnim.Volume = 2
+	sonidoAnim.Parent = workspace
+	sonidoAnim:Play()
+	
+	-- REPRODUCCIÓN DE ANIMACIÓN
+	local animator = humanoide:FindFirstChildOfClass("Animator") or Instance.new("Animator", humanoide)
+	local objetoAnimacion = Instance.new("Animation")
+	objetoAnimacion.AnimationId = ANIMACION_ID
+	
+	local trackAnimacion = animator:LoadAnimation(objetoAnimacion)
+	trackAnimacion.Priority = Enum.AnimationPriority.Action4
+	trackAnimacion.Looped = false
+	trackAnimacion:Play()
+	
+	if trackAnimacion.Length > 0 then
+		trackAnimacion.Ended:Wait()
+	else
+		task.wait(3)
+	end
+	
+	-- Detener el sonido en loop y limpiar la luz
+	sonidoLoop:Stop()
+	sonidoLoop:Destroy()
+	sonidoAnim:Destroy()
+	luzCuarto:Destroy()
+	
+	-- ESCANEO FINAL DE ARMARIO: Verificar si se escondió al terminar todas las fases
+	if escanearSeguridadArmario(personaje) then
+		-- Si logró entrar al armario antes de morir: Se salva y Dread desaparece
+		dread:Destroy()
+	else
+		-- Si no está en un armario: Muestra el logro animado y muere
+		mostrarLogro()
+		humanoide.Health = 0
+		dread:Destroy()
+	end
+end
+
