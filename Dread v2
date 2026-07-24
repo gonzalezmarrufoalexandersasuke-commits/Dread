@@ -11,10 +11,10 @@ local TAMANO_ENTIDAD = Vector3.new(12, 12, 0.2)
 
 local AUDIO_ILUMINACION = "rbxassetid://4940109913"
 local AUDIO_ANIMACION = "rbxassetid://137192919028248"
-local AUDIO_LOGRO = "rbxassetid://10214220300" -- Sonido estilo logro de Doors
+local AUDIO_LOGRO = "rbxassetid://70647822444952" -- Sonido estilo logro de Doors
 
 local ANIMACION_ID = "http://www.roblox.com/asset/?id=507766388"
-local LOGRO_ENCOUNTER_ID = "rbxassetid://96662874287445"
+local LOGRO_ENCOUNTER_ID = "rbxassetid://78112705705037"
 
 local personaje = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local rootPart = personaje:WaitForChild("HumanoidRootPart")
